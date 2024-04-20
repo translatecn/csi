@@ -1,0 +1,7 @@
+/bin
+# Ignore DevSpace cache and log folder
+.devspace/
+vendor
+.idea
+.vscode
+.DS_Store
