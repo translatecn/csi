@@ -40,6 +40,6 @@ test -e /usr/sbin/xfs_quota || {
 
 
 #rm -rf csi-bin || echo 1
-#go build -gcflags "all=-N -l" -o csi-bin . && dlv --listen=:33333 --headless=true --api-version=2 --accept-multiclient exec csi-bin -- --drivername=hostpath.csi.k8s.io --endpoint=${CSI_ENDPOINT} --nodeid=${KUBE_NODE_NAME} --v=6
-
-bash --norc
+go build -gcflags "all=-N -l" -o csi-bin . && dlv --listen=:33333 --headless=true --api-version=2 --accept-multiclient exec csi-bin -- --drivername=hostpath.csi.k8s.io --endpoint=${CSI_ENDPOINT} --nodeid=${KUBE_NODE_NAME} --v=6
+#
+#bash --norc

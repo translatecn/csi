@@ -172,7 +172,7 @@ func New(statefilePath string) (State, error) {
 }
 
 func (s *state) dump() error {
-	data, err := json.MarshalIndent(&s.resources, "  ", "  ")
+	data, err := json.Marshal(&s.resources)
 	if err != nil {
 		return status.Errorf(codes.Internal, "error encoding volumes and snapshots: %v", err)
 	}

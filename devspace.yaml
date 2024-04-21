@@ -41,7 +41,7 @@ dev:
     labelSelector:
       app: dev
     # Replace the container image with this dev-optimized image (allows to skip image building during development)
-    devImage: registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:1.22
+    devImage: registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:v1.21.5
     # Sync files between the local filesystem and the development container
     sync:
       - path: ./:/data
@@ -55,6 +55,7 @@ dev:
     terminal:
       workDir: /data
       command: ./scripts/devspace_start.sh
+      enabled: true
     # Inject a lightweight SSH server into the container (so your IDE can connect to the remote dev env)
     ssh:
       enabled: true
@@ -67,18 +68,3 @@ dev:
     # Forward the following ports to be able access your application via localhost
     ports:
       - port: "33333"
-
-# Use the `commands` section to define repeatable dev workflows for this project 
-commands:
-  migrate-db:
-    command: |-
-      echo 'This is a cross-platform, shared command that can be used to codify any kind of dev task.'
-      echo 'Anyone using this project can invoke it via "devspace run migrate-db"'
-
-# Define dependencies to other projects with a devspace.yaml
-# dependencies:
-#   api:
-#     git: https://...  # Git-based dependencies
-#     tag: v1.0.0
-#   ui:
-#     path: ./ui        # Path-based dependencies (for monorepos)

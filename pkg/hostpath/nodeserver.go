@@ -18,11 +18,12 @@ package hostpath
 
 import (
 	"fmt"
-	klog "k8s.io/klog/v2"
+	"k8s.io/klog/v2"
 	"os"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,6 +41,7 @@ const (
 var _ csi.NodeServer = &HostPath{}
 
 func (hp *HostPath) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+	// NodeStageVolume->NodePublishVolume
 	// Check arguments
 	if req.GetVolumeCapability() == nil {
 		return nil, status.Error(codes.InvalidArgument, "Volume capability missing in request")
@@ -52,6 +54,8 @@ func (hp *HostPath) NodePublishVolume(ctx context.Context, req *csi.NodePublishV
 	}
 
 	targetPath := req.GetTargetPath()
+	ephemeralVolume := req.GetVolumeContext()["csi.storage.k8s.io/ephemeral"] == "true" ||
+		req.GetVolumeContext()["csi.storage.k8s.io/ephemeral"] == "" && hp.config.Ephemeral // Kubernetes 1.15 doesn't have csi.storage.k8s.io/ephemeral.
 
 	if req.GetVolumeCapability().GetBlock() != nil &&
 		req.GetVolumeCapability().GetMount() != nil {
@@ -65,6 +69,24 @@ func (hp *HostPath) NodePublishVolume(ctx context.Context, req *csi.NodePublishV
 
 	mounter := mount.New("")
 
+	// if ephemeral is specified, create volume here to avoid errors
+	if ephemeralVolume {
+		volID := req.GetVolumeId()
+		volName := fmt.Sprintf("ephemeral-%s", volID)
+		if _, err := hp.state.GetVolumeByName(volName); err != nil {
+			// Volume doesn't exist, create it
+			kind := req.GetVolumeContext()[storageKind]
+			// Configurable size would be nice. For now we use a small, fixed volume size of 100Mi.
+			volSize := int64(100 * 1024 * 1024)
+			vol, err := hp.createVolume(req.GetVolumeId(), volName, volSize, state.MountAccess, ephemeralVolume, kind)
+			if err != nil && !os.IsExist(err) {
+				glog.Error("ephemeral mode failed to create volume: ", err)
+				return nil, err
+			}
+			glog.V(4).Infof("ephemeral mode: created volume: %s", vol.VolPath)
+		}
+	}
+
 	vol, err := hp.state.GetVolumeByID(req.GetVolumeId())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -74,11 +96,13 @@ func (hp *HostPath) NodePublishVolume(ctx context.Context, req *csi.NodePublishV
 		return nil, status.Error(codes.FailedPrecondition, failedPreconditionAccessModeConflict)
 	}
 
-	if vol.Staged.Empty() {
-		return nil, status.Errorf(codes.FailedPrecondition, "volume %q must be staged before publishing", vol.VolID)
-	}
-	if !vol.Staged.Has(req.GetStagingTargetPath()) {
-		return nil, status.Errorf(codes.InvalidArgument, "volume %q was staged at %v, not %q", vol.VolID, vol.Staged, req.GetStagingTargetPath())
+	if !ephemeralVolume {
+		if vol.Staged.Empty() {
+			return nil, status.Errorf(codes.FailedPrecondition, "volume %q must be staged before publishing", vol.VolID)
+		}
+		if !vol.Staged.Has(req.GetStagingTargetPath()) {
+			return nil, status.Errorf(codes.InvalidArgument, "volume %q was staged at %v, not %q", vol.VolID, vol.Staged, req.GetStagingTargetPath())
+		}
 	}
 
 	if req.GetVolumeCapability().GetBlock() != nil {

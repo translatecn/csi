@@ -20,18 +20,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	csi_attacher "local/3rd/external-attacher/cmd/csi-attacher"
-	csi_external_health_monitor_controller "local/3rd/external-health-monitor/cmd/csi-external-health-monitor-controller"
-	csi_provisioner "local/3rd/external-provisioner/cmd/csi-provisioner"
-	csi_resizer "local/3rd/external-resizer/cmd/csi-resizer"
-	csi_node_driver_registrar "local/3rd/over-node-driver-registrar/cmd/csi-node-driver-registrar"
-	"local/pkg/hostpath"
-	"local/pkg/proxy"
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
-	"time"
+
+	"local/pkg/hostpath"
+	"local/pkg/proxy"
 )
 
 func init() {
@@ -43,19 +39,6 @@ var (
 	version = "default"
 )
 
-func Loop(f func()) {
-	for {
-		func() {
-			defer func() {
-				a := recover()
-				fmt.Errorf("%v", a)
-				time.Sleep(time.Second * 5)
-			}()
-			f()
-		}()
-	}
-}
-
 func main() {
 
 	cfg := hostpath.Config{
@@ -66,6 +49,7 @@ func main() {
 	flag.StringVar(&cfg.DriverName, "drivername", "hostpath.csi.k8s.io", "name of the driver")
 	flag.StringVar(&cfg.StateDir, "statedir", "/tmp/csi-driver-host-path", "directory for storing state information across driver restarts, volumes and snapshots")
 	flag.StringVar(&cfg.NodeID, "nodeid", "", "node id")
+	flag.BoolVar(&cfg.Ephemeral, "ephemeral", false, "publish volumes in ephemeral mode even if kubelet did not ask for it (only needed for Kubernetes 1.15)")
 	flag.Int64Var(&cfg.MaxVolumesPerNode, "maxvolumespernode", 0, "limit of volumes per node")
 	flag.Var(&cfg.Capacity, "capacity", "Simulate storage capacity. The parameter is <kind>=<quantity> where <kind> is the value of a 'kind' storage class parameter and <quantity> is the total amount of bytes for that kind. The flag may be used multiple times to configure different kinds.")
 	flag.BoolVar(&cfg.EnableAttach, "enable-attach", false, "Enables RPC_PUBLISH_UNPUBLISH_VOLUME capability.")
@@ -80,24 +64,24 @@ func main() {
 	flag.BoolVar(&cfg.DisableControllerExpansion, "disable-controller-expansion", false, "Disables Controller volume expansion capability.")
 	flag.BoolVar(&cfg.DisableNodeExpansion, "disable-node-expansion", false, "Disables Node volume expansion capability.")
 	flag.Int64Var(&cfg.MaxVolumeExpansionSizeNode, "max-volume-size-node", 0, "Maximum allowed size of volume when expanded on the node. Defaults to same size as max-volume-size.")
-	flag.StringVar(&cfg.VendorVersion, "vendor-version", "default", "")
+
 	flag.Int64Var(&cfg.AttachLimit, "attach-limit", 0, "Maximum number of attachable volumes on a node. Zero refers to no limit.")
+	showVersion := flag.Bool("version", false, "Show version.")
 	// The proxy-endpoint option is intended to used by the Kubernetes E2E test suite
 	// for proxying incoming calls to the embedded mock CSI driver.
 	proxyEndpoint := flag.String("proxy-endpoint", "", "Instead of running the CSI driver code, just proxy connections from csiEndpoint to the given listening socket.")
+
 	flag.Parse()
-	//Loop(csi_attacher.Main)
-	//Loop(csi_external_health_monitor_controller.Main)
-	//Loop(csi_provisioner.Main)
-	//Loop(csi_resizer.Main)
-	//Loop(csi_node_driver_registrar.Main)
-	go func() {
-		go Loop(csi_attacher.Main)
-		go Loop(csi_external_health_monitor_controller.Main)
-		go Loop(csi_provisioner.Main)
-		go Loop(csi_resizer.Main)
-		go Loop(csi_node_driver_registrar.Main) // ✅
-	}()
+
+	if *showVersion {
+		baseName := path.Base(os.Args[0])
+		fmt.Println(baseName, version)
+		return
+	}
+
+	if cfg.Ephemeral {
+		fmt.Fprintln(os.Stderr, "Deprecation warning: The ephemeral flag is deprecated and should only be used when deploying on Kubernetes 1.15. It will be removed in the future.")
+	}
 
 	if *proxyEndpoint != "" {
 		ctx, cancel := context.WithCancel(context.Background())

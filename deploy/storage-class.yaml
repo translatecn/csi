@@ -10,4 +10,4 @@ allowedTopologies:
   - matchLabelExpressions:
       - key: topology.hostpath.csi/node
         values:
-          - "koord-worker2"
+          - "koord-worker"

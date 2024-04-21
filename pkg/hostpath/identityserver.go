@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	klog "k8s.io/klog/v2"
+	"k8s.io/klog/v2"
 )
 
 var _ csi.IdentityServer = &HostPath{}
@@ -53,14 +53,14 @@ func (hp *HostPath) GetPluginCapabilities(ctx context.Context, req *csi.GetPlugi
 		{
 			Type: &csi.PluginCapability_Service_{
 				Service: &csi.PluginCapability_Service{
-					Type: csi.PluginCapability_Service_CONTROLLER_SERVICE, // 控制器
+					Type: csi.PluginCapability_Service_CONTROLLER_SERVICE,
 				},
 			},
 		},
 		{
 			Type: &csi.PluginCapability_Service_{
 				Service: &csi.PluginCapability_Service{
-					Type: csi.PluginCapability_Service_GROUP_CONTROLLER_SERVICE, // 对卷组进行操作
+					Type: csi.PluginCapability_Service_GROUP_CONTROLLER_SERVICE,
 				},
 			},
 		},
@@ -69,7 +69,7 @@ func (hp *HostPath) GetPluginCapabilities(ctx context.Context, req *csi.GetPlugi
 		caps = append(caps, &csi.PluginCapability{
 			Type: &csi.PluginCapability_Service_{
 				Service: &csi.PluginCapability_Service{
-					Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS, // 插件的卷可能无法被集群中的所有节点同等访问,也就是支持拓扑
+					Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS,
 				},
 			},
 		})

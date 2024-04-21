@@ -71,6 +71,7 @@ type Config struct {
 	MaxVolumeSize                 int64
 	AttachLimit                   int64
 	Capacity                      Capacity
+	Ephemeral                     bool
 	ShowVersion                   bool
 	EnableAttach                  bool
 	EnableTopology                bool

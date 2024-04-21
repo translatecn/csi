@@ -15,6 +15,6 @@
 FROM alpine
 ARG binary=./bin/hostpathplugin
 RUN #export https_proxy=http://192.168.31.50:7890 http_proxy=http://192.168.31.50:7890 all_proxy=socks5://192.168.31.50:7890 && apk add util-linux coreutils socat xfsprogs && apk update && apk upgrade
-RUN export https_proxy=http://172.20.10.248:1080 http_proxy=http://172.20.10.248:1080 all_proxy=socks5://172.20.10.248:1080 && apk add util-linux coreutils socat xfsprogs && apk update && apk upgrade
+RUN apk add util-linux coreutils socat xfsprogs && apk update && apk upgrade
 COPY ${binary} /hostpathplugin
 ENTRYPOINT ["/hostpathplugin"]
