@@ -12,9 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine
-ARG binary=./bin/hostpathplugin
-RUN #export https_proxy=http://192.168.31.50:7890 http_proxy=http://192.168.31.50:7890 all_proxy=socks5://192.168.31.50:7890 && apk add util-linux coreutils socat xfsprogs && apk update && apk upgrade
-RUN apk add util-linux coreutils socat xfsprogs && apk update && apk upgrade
-COPY ${binary} /hostpathplugin
-ENTRYPOINT ["/hostpathplugin"]
+FROM registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:v1.21.5 as build
+WORKDIR /app
+COPY . .
+RUN /usr/local/go1.21.5/bin/go mod vendor
+RUN /usr/local/go1.21.5/bin/go build -o csi-bin .
+
+FROM centos:7
+WORKDIR /app
+RUN yum clean all && yum update -y && yum install socat xfsprogs -y
+COPY --from=build /app/csi-bin /usr/bin/csi-bin
+COPY ./scripts ./scripts
+ENTRYPOINT ["/usr/bin/csi-bin"]
