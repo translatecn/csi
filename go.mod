@@ -11,6 +11,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	golang.org/x/net v0.24.0
 	google.golang.org/grpc v1.63.2
+	k8s.io/api v0.29.4
 	k8s.io/apimachinery v0.29.4
 	k8s.io/cloud-provider v0.29.4
 	k8s.io/klog/v2 v2.120.1
@@ -42,7 +43,6 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.29.4 // indirect
 	k8s.io/apiextensions-apiserver v0.29.2 // indirect
 	k8s.io/apiserver v0.29.4 // indirect
 	k8s.io/component-base v0.29.4 // indirect

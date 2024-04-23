@@ -1,95 +1,105 @@
-#---
-#kind: StatefulSet
-#apiVersion: apps/v1
-#metadata:
-#  name: csi-debug
-#  namespace: default
-#spec:
-#  serviceName: "csi-debug"
-#  # One replica only:
-#  # Host path driver only works when everything runs
-#  # on a single node.
-#  replicas: 1
-#  selector:
-#    matchLabels:
-#      app: dev
-#  template:
-#    metadata:
-#      labels:
-#        app: dev
-#        csi: "local-host"
-#    spec:
-#      nodeName: "koord-worker"
-#      serviceAccountName: csi-host-sa
-#      containers:
-#        - name: hostpath
-#          image: k8s.m.daocloud.io/sig-storage/hostpathplugin:v1.13.0
-#          args:
-#            - "--drivername=hostpath.csi.k8s.io"
-#            - "--endpoint=$(CSI_ENDPOINT)"
-#            - "--nodeid=$(KUBE_NODE_NAME)"
-#            - --capacity
-#            - --enable-attach
-#          env:
-#            - name: CSI_ENDPOINT
-#              value: unix:///csi/csi.sock
-#            - name: KUBE_NODE_NAME
-#              valueFrom:
-#                fieldRef:
-#                  apiVersion: v1
-#                  fieldPath: spec.nodeName
-#            - name: NAMESPACE
-#              valueFrom:
-#                fieldRef:
-#                  apiVersion: v1
-#                  fieldPath: metadata.namespace
-#            - name: POD_NAME
-#              valueFrom:
-#                fieldRef:
-#                  apiVersion: v1
-#                  fieldPath: metadata.name
-#          securityContext:
-#            privileged: true
-#          volumeMounts:
-#            - mountPath: /csi
-#              name: socket-dir
-#            - mountPath: /var/lib/kubelet/pods
-#              mountPropagation: Bidirectional
-#              name: mountpoint-dir
-#            - mountPath: /var/lib/kubelet/plugins
-#              mountPropagation: Bidirectional
-#              name: plugins-dir
-#            - mountPath: /dev
-#              name: dev-dir
-#            - mountPath: /root/.go
-#              name: cache-dir
-#              subPath: go
-#            - mountPath: /root/.cache/
-#              name: cache-dir
-#              subPath: cache
-#            - mountPath: /registration
-#              name: registration-dir
-#      volumes:
-#        - hostPath:
-#            path: /var/lib/kubelet/plugins/csi-hostpath
-#            type: DirectoryOrCreate
-#          name: socket-dir
-#        - hostPath:
-#            path: /var/lib/kubelet/pods
-#            type: DirectoryOrCreate
-#          name: mountpoint-dir
-#        - hostPath:
-#            path: /var/lib/kubelet/plugins_registry
-#            type: Directory
-#          name: registration-dir
-#        - hostPath:
-#            path: /var/lib/kubelet/plugins
-#            type: Directory
-#          name: plugins-dir
-#        - hostPath:
-#            path: /dev
-#            type: Directory
-#          name: dev-dir
-#        - hostPath:
-#            path: /build_cache
-#          name: cache-dir
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: csi-debug
+  namespace: default
+spec:
+  serviceName: "csi-debug"
+  # One replica only:
+  # Host path driver only works when everything runs
+  # on a single node.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dev
+  template:
+    metadata:
+      labels:
+        app: dev
+        csi: "local-host"
+    spec:
+      nodeName: "koord-worker"
+      serviceAccountName: csi-host-sa
+      containers:
+        - name: hostpath
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
+          args:
+            - "--drivername=$(DRIVER_NAME)"
+            - "--v=9"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodeid=$(KUBE_NODE_NAME)"
+          #            - --capacity
+          #            - --enable-attach
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.annotations['drivername']
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 9898
+              name: healthz
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 2
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+              name: mountpoint-dir
+            - mountPath: /var/lib/kubelet/plugins
+              mountPropagation: Bidirectional
+              name: plugins-dir
+            - mountPath: /nfs
+              mountPropagation: Bidirectional
+              name: nfs
+            - mountPath: /csi-data-dir
+              mountPropagation: Bidirectional
+              name: csi-data-dir
+      volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-hostpath
+            type: DirectoryOrCreate
+          name: socket-dir
+        - hostPath:
+            path: /var/lib/kubelet/pods
+            type: DirectoryOrCreate
+          name: mountpoint-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+          name: registration-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins
+            type: Directory
+          name: plugins-dir
+        - hostPath:
+            path: /dev
+            type: Directory
+          name: dev-dir
+        - hostPath:
+            path: /build_cache
+          name: cache-dir
+        - emptyDir: { }
+          name: csi-data-dir
+        - hostPath:
+            path: /nfs
+            type: Directory
+          name: nfs

@@ -9,9 +9,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-controller-role
 subjects:
-- kind: ServiceAccount
-  name: csi-controller
-  namespace: default
+  - kind: ServiceAccount
+    name: csi-controller
+    namespace: default
 roleRef:
   kind: ClusterRole
   name: external-controller-runner
@@ -23,9 +23,9 @@ metadata:
   name: csi-controller-role-cfg
   namespace: default
 subjects:
-- kind: ServiceAccount
-  name: csi-controller
-  namespace: default
+  - kind: ServiceAccount
+    name: csi-controller
+    namespace: default
 roleRef:
   kind: Role
   name: external-controller-cfg
@@ -47,148 +47,142 @@ spec:
         app: csi-hostpath-controller
     spec:
       serviceAccountName: csi-controller
-      nodeName: "koord-worker"
       containers:
-      - name: csi-attacher
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-attacher:v4.5.0
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-        args:
-        - --v=9
-        - --csi-address=$(ADDRESS)
-        - --leader-election
-        - --http-endpoint=:8080
-        env:
-        - name: ADDRESS
-          value: /csi/csi.sock
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
-        ports:
-        - containerPort: 8080
-          name: http-endpoint
-          protocol: TCP
-        livenessProbe:
-          failureThreshold: 1
-          httpGet:
-            path: /healthz/leader-election
-            port: http-endpoint
-          initialDelaySeconds: 10
-          timeoutSeconds: 10
-          periodSeconds: 20
-      - name: csi-provisioner
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-provisioner:v4.0.0
-        securityContext:
-          privileged: true
-        args:
-        - -v=9
-        - --csi-address=/csi/csi.sock
-        - --feature-gates=Topology=true
-        - "--leader-election"
-        - "--enable-capacity"
-        - "--http-endpoint=:8081"
-        - "--capacity-ownerref-level=1"
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
-        ports:
-        - containerPort: 8081
-          name: http-endpoint
-          protocol: TCP
-        livenessProbe:
-          failureThreshold: 1
-          httpGet:
-            path: /healthz/leader-election
-            port: http-endpoint
-          initialDelaySeconds: 10
-          timeoutSeconds: 10
-          periodSeconds: 20
-      - name: csi-resizer
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-resizer:v1.10.0
-        args:
-        - -v=9
-        - -csi-address=/csi/csi.sock
-        - --leader-election
-        - --http-endpoint=:8082
-        ports:
-        - containerPort: 8082
-          name: http-endpoint
-          protocol: TCP
-        livenessProbe:
-          failureThreshold: 1
-          httpGet:
-            path: /healthz/leader-election
-            port: http-endpoint
-          initialDelaySeconds: 10
-          timeoutSeconds: 10
-          periodSeconds: 20
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
+        - name: csi-attacher
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-attacher:v4.5.0
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+          args:
+            - --v=9
+            - --csi-address=$(ADDRESS)
+            - --leader-election
+            - --http-endpoint=:8080
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          ports:
+            - containerPort: 8080
+              name: http-endpoint
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /healthz/leader-election
+              port: http-endpoint
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 20
+        - name: csi-provisioner
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-provisioner:v4.0.0
+          securityContext:
+            privileged: true
+          args:
+            - -v=9
+            - --csi-address=/csi/csi.sock
+            - --feature-gates=Topology=true
+            - "--leader-election"
+            - "--enable-capacity"
+            - "--http-endpoint=:8081"
+            - "--capacity-ownerref-level=1"
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          ports:
+            - containerPort: 8081
+              name: http-endpoint
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /healthz/leader-election
+              port: http-endpoint
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 20
+        - name: csi-resizer
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-resizer:v1.10.0
+          args:
+            - -v=9
+            - -csi-address=/csi/csi.sock
+            - --leader-election
+            - --http-endpoint=:8082
+          ports:
+            - containerPort: 8082
+              name: http-endpoint
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /healthz/leader-election
+              port: http-endpoint
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 20
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
       volumes:
-      - hostPath:
-          path: /var/lib/kubelet/plugins/csi-hostpath
-          type: DirectoryOrCreate
-        name: socket-dir
-
-
-
-
-
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-hostpath
+            type: DirectoryOrCreate
+          name: socket-dir
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: external-controller-runner
 rules:
-- apiGroups: [""]
-  resources: ["persistentvolumes"]
-  verbs: ["get", "list", "watch", "patch", "create", "delete"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["csinodes"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["volumeattachments"]
-  verbs: ["get", "list", "watch", "patch"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["volumeattachments/status"]
-  verbs: ["patch"]
-- apiGroups: [""]
-  resources: ["persistentvolumeclaims"]
-  verbs: ["get", "list", "watch", "update"]
-- apiGroups: [""]
-  resources: ["persistentvolumeclaims/status"]
-  verbs: ["get", "list", "watch", "update", "patch"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["storageclasses"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["events"]
-  verbs: ["list", "watch", "create", "update", "patch"]
-- apiGroups: ["snapshot.storage.k8s.io"]
-  resources: ["volumesnapshots"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["snapshot.storage.k8s.io"]
-  resources: ["volumesnapshotcontents"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumes" ]
+    verbs: [ "get", "list", "watch", "patch", "create", "delete" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "csinodes" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "volumeattachments" ]
+    verbs: [ "get", "list", "watch", "patch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "volumeattachments/status" ]
+    verbs: [ "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims" ]
+    verbs: [ "get", "list", "watch", "update" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims/status" ]
+    verbs: [ "get", "list", "watch", "update", "patch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "storageclasses" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "snapshot.storage.k8s.io" ]
+    resources: [ "volumesnapshots" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "snapshot.storage.k8s.io" ]
+    resources: [ "volumesnapshotcontents" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "nodes" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "pods" ]
+    verbs: [ "get", "list", "watch" ]
 
 ---
 kind: Role
@@ -197,15 +191,15 @@ metadata:
   namespace: default
   name: external-controller-cfg
 rules:
-- apiGroups: ["coordination.k8s.io"]
-  resources: ["leases"]
-  verbs: ["get", "watch", "list", "delete", "update", "create"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["csistoragecapacities"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-- apiGroups: ["apps"]
-  resources: ["replicasets", "statefulsets"]
-  verbs: ["get", "list", "watch"]
+  - apiGroups: [ "coordination.k8s.io" ]
+    resources: [ "leases" ]
+    verbs: [ "get", "watch", "list", "delete", "update", "create" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "csistoragecapacities" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "replicasets", "statefulsets" ]
+    verbs: [ "get", "list", "watch" ]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -218,21 +212,21 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: host-runner
 rules:
-- apiGroups: [""]
-  resources: ["events"]
-  verbs: ["get", "list", "watch", "create", "update", "patch"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["get", "update", "patch"]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "nodes" ]
+    verbs: [ "get", "update", "patch" ]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: csi-host-role
 subjects:
-- kind: ServiceAccount
-  name: csi-host-sa
-  namespace: default
+  - kind: ServiceAccount
+    name: csi-host-sa
+    namespace: default
 roleRef:
   kind: ClusterRole
   name: host-runner
@@ -256,123 +250,126 @@ spec:
       serviceAccountName: csi-host-sa
       hostNetwork: true
       initContainers:
-      - name: init-hostpath
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
-        securityContext:
-          privileged: true
-        command:
-        - bash
-        - "-c"
-        - "bash +x /app/scripts/host.sh"
-        volumeMounts:
-        - mountPath: /nfs
-          mountPropagation: Bidirectional
-          name: nfs
-        - mountPath: /csi-data-dir
-          mountPropagation: Bidirectional
-          name: csi-data-dir
+        - name: init-hostpath
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
+          securityContext:
+            privileged: true
+          command:
+            - bash
+            - "-c"
+            #            - "sleep 1d "
+            - "bash +x /app/scripts/host.sh"
+          volumeMounts:
+            - mountPath: /nfs
+              mountPropagation: Bidirectional
+              name: nfs
+            - mountPath: /csi-data-dir
+              mountPropagation: Bidirectional
+              name: csi-data-dir
       containers:
-      - name: hostpath
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
-        args:
-        - "--drivername=$(DRIVER_NAME)"
-        - "--v=9"
-        - "--endpoint=$(CSI_ENDPOINT)"
-        - "--nodeid=$(KUBE_NODE_NAME)"
-        #            - --capacity
-        #            - --enable-attach
-        env:
-        - name: CSI_ENDPOINT
-          value: unix:///csi/csi.sock
-        - name: KUBE_NODE_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
-        - name: DRIVER_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.annotations['drivername']
-        securityContext:
-          privileged: true
-        ports:
-        - containerPort: 9898
-          name: healthz
-          protocol: TCP
-        livenessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /healthz
-            port: healthz
-          initialDelaySeconds: 10
-          timeoutSeconds: 3
-          periodSeconds: 2
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
-        - mountPath: /var/lib/kubelet/pods
-          mountPropagation: Bidirectional
-          name: mountpoint-dir
-        - mountPath: /var/lib/kubelet/plugins
-          mountPropagation: Bidirectional
-          name: plugins-dir
-        - mountPath: /nfs
-          mountPropagation: Bidirectional
-          name: nfs
-        - mountPath: /csi-data-dir
-          mountPropagation: Bidirectional
-          name: csi-data-dir
-      - name: liveness-probe
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/livenessprobe:v2.12.0
-        args:
-        - --csi-address=/csi/csi.sock
-        - --health-port=9898
-        - --v=9
-      - name: csi-driver-registrar
-        image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-node-driver-registrar:v2.5.0
-        args:
-        - "--csi-address=/csi/csi.sock"
-        - "--kubelet-registration-path=/var/lib/kubelet/plugins/csi-hostpath/csi.sock"
-        - "--health-port=9809"
-        - -v=9
-        volumeMounts:
-        - mountPath: /csi
-          name: socket-dir
-        - mountPath: /registration
-          name: registration-dir
-        env:
-        - name: DRIVER_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.annotations['drivername']
+        - name: hostpath
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
+          args:
+            - "--drivername=$(DRIVER_NAME)"
+            - "--v=9"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodeid=$(KUBE_NODE_NAME)"
+          #            - --capacity
+          #            - --enable-attach
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: DRIVER_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.annotations['drivername']
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 9898
+              name: healthz
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 2
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+              name: mountpoint-dir
+            - mountPath: /var/lib/kubelet/plugins
+              mountPropagation: Bidirectional
+              name: plugins-dir
+            - mountPath: /nfs
+              mountPropagation: Bidirectional
+              name: nfs
+            - mountPath: /csi-data-dir
+              mountPropagation: Bidirectional
+              name: csi-data-dir
+        - name: liveness-probe
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/livenessprobe:v2.12.0
+          args:
+            - --csi-address=/csi/csi.sock
+            - --health-port=9898
+            - --v=9
+        - name: csi-driver-registrar
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-node-driver-registrar:v2.5.0
+          args:
+            - "--csi-address=/csi/csi.sock"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/csi-hostpath/csi.sock"
+            - "--health-port=9809"
+            - -v=9
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            - mountPath: /registration
+              name: registration-dir
+          env:
+            - name: DRIVER_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.annotations['drivername']
       volumes:
-      - hostPath:
-          path: /var/lib/kubelet/plugins/csi-hostpath
-          type: DirectoryOrCreate
-        name: socket-dir
-      - hostPath:
-          path: /var/lib/kubelet/plugins
-          type: Directory
-        name: plugins-dir
-      - hostPath:
-          path: /var/lib/kubelet/pods
-          type: DirectoryOrCreate
-        name: mountpoint-dir
-      - hostPath:
-          path: /var/lib/kubelet/plugins_registry
-          type: Directory
-        name: registration-dir
-      - emptyDir: {}
-        name: csi-data-dir
-      - hostPath:
-          path: /nfs
-          type: Directory
-        name: nfs
+        - hostPath:
+            path: /var/lib/kubelet/plugins/csi-hostpath
+            type: DirectoryOrCreate
+          name: socket-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins
+            type: Directory
+          name: plugins-dir
+        - hostPath:
+            path: /var/lib/kubelet/pods
+            type: DirectoryOrCreate
+          name: mountpoint-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+          name: registration-dir
+        - hostPath:
+            path: /nfs
+            type: Directory
+          name: nfs
+        - name: csi-data-dir
+          hostPath:
+            path: /csi-data-dir
+            type: DirectoryOrCreate
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -391,26 +388,25 @@ spec:
         app: busybox
     spec:
       containers:
-      - name: busybox
-        image: busybox
-        volumeMounts:
-        - mountPath: "/data"
-          name: my-csi-volume
-        command: ["sleep", "1d"]
-
+        - name: busybox
+          image: busybox
+          volumeMounts:
+            - mountPath: "/data"
+              name: my-csi-volume
+          command: [ "sleep", "1d" ]
   volumeClaimTemplates:
-  - kind: PersistentVolumeClaim
-    apiVersion: v1
-    metadata:
-      name: my-csi-volume
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: 10Mi
-      storageClassName: csi-hostpath-sc
-      volumeMode: Filesystem
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: my-csi-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Mi
+        storageClassName: csi-hostpath-sc
+        volumeMode: Filesystem
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -421,8 +417,11 @@ reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer # 经过csi controller 决定调度到哪里, Immediate
 allowVolumeExpansion: true
 allowedTopologies:
-- matchLabelExpressions:
-  - key: topology.hostpath.csi/node
-    values:
-    - "koord-worker2"
-    - "koord-worker3"
+  - matchLabelExpressions:
+      - key: topology.hostpath.csi/node
+        values:
+          - "koord-worker2"
+  - matchLabelExpressions:
+      - key: topology.hostpath.csi/node
+        values:
+          - "koord-worker3"

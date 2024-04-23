@@ -35,8 +35,9 @@ kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-p
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-attacher:v4.5.0
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-resizer:v1.10.0
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/livenessprobe:v2.12.0
+kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-node-driver-registrar:v2.5.0
+
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:v1.21.5
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
-kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-node-driver-registrar:v2.5.0
 
 docker rmi $(docker images -f "dangling=true" -q)
