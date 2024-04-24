@@ -249,23 +249,6 @@ spec:
     spec:
       serviceAccountName: csi-host-sa
       hostNetwork: true
-      initContainers:
-        - name: init-hostpath
-          image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
-          securityContext:
-            privileged: true
-          command:
-            - bash
-            - "-c"
-            #            - "sleep 1d "
-            - "bash +x /app/scripts/host.sh"
-          volumeMounts:
-            - mountPath: /nfs
-              mountPropagation: Bidirectional
-              name: nfs
-            - mountPath: /csi-data-dir
-              mountPropagation: Bidirectional
-              name: csi-data-dir
       containers:
         - name: hostpath
           image: registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
@@ -274,7 +257,8 @@ spec:
             - "--v=9"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodeid=$(KUBE_NODE_NAME)"
-          #            - --capacity
+            - --capacity=local=1572864000    # 1.5G
+            - --max-volume-size=524288000    # 500M
           #            - --enable-attach
           env:
             - name: CSI_ENDPOINT
@@ -381,7 +365,7 @@ spec:
     matchLabels:
       app: busybox
   serviceName: "busybox"
-  replicas: 3 # by default is 1
+  replicas: 60
   template:
     metadata:
       labels:
@@ -413,15 +397,21 @@ kind: StorageClass
 metadata:
   name: csi-hostpath-sc
 provisioner: hostpath.csi.k8s.io
-reclaimPolicy: Delete
+reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer # 经过csi controller 决定调度到哪里, Immediate
 allowVolumeExpansion: true
+parameters:
+  kind: local
 allowedTopologies:
   - matchLabelExpressions:
       - key: topology.hostpath.csi/node
         values:
           - "koord-worker2"
-  - matchLabelExpressions:
-      - key: topology.hostpath.csi/node
-        values:
-          - "koord-worker3"
+#  - matchLabelExpressions:
+#      - key: topology.hostpath.csi/node
+#        values:
+#          - "koord-worker3"
+#  - matchLabelExpressions:
+#      - key: topology.hostpath.csi/node
+#        values:
+#          - "koord-worker1"

@@ -266,7 +266,6 @@ func (hp *HostPath) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpubl
 			return nil, err
 		}
 	}
-
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 

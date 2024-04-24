@@ -11,7 +11,8 @@ docker cp ./scripts/sources.list $Master:/etc/apt/sources.list
 
 kubectl apply -f ./scripts/k8s.yaml
 
-docker rm yq --force || docker run --name yq  -d registry.cn-hangzhou.aliyuncs.com/acejilam/yq:v4.43.1 sleep 1d
+docker rm yq --force
+docker run --name yq -d registry.cn-hangzhou.aliyuncs.com/acejilam/yq:v4.43.1 sleep 1d
 docker cp yq:/yq /tmp/yq
 docker cp /tmp/yq $Master:/usr/bin/yq
 docker exec $Master chmod 777 /usr/bin/yq
@@ -41,3 +42,14 @@ kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:
 kind load docker-image -n koord registry.cn-hangzhou.aliyuncs.com/acejilam/csi-hostpath:v2
 
 docker rmi $(docker images -f "dangling=true" -q)
+
+
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker cp ./scripts/host.sh F:/host.sh
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker cp ./scripts/sources.list F:/etc/apt/sources.list
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F rm -rf /etc/apt/sources.list.d
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F pkill -9 apt
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F apt update
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F apt install xfsprogs -y
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F bash -c 'for i in {1..10}; do umount /csi-data-dir/csi-driver-host-path;done;'
+sleep 1
+kubectl get node -o jsonpath="{range .items[*]}{.metadata.name}{'\n'}{end}" |grep worker | xargs -I F docker exec F bash +x /host.sh

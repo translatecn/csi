@@ -14,7 +14,10 @@
 
 FROM registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:v1.21.5 as build
 WORKDIR /app
-COPY . .
+COPY pkg pkg
+COPY go.mod go.mod
+COPY go.sum go.sum
+COPY main.go main.go
 RUN /usr/local/go1.21.5/bin/go mod vendor
 RUN /usr/local/go1.21.5/bin/go build -o csi-bin .
 

@@ -278,10 +278,7 @@ func (hp *HostPath) deleteVolume(volID string) error {
 }
 func (hp *HostPath) resizeVolume(volID string, bytes int64) error {
 	path := hp.getVolumePath(volID)
-	if err := os.RemoveAll(path); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return hp.quotaer.UpdateQuota(volID, xfs.ConvertBytesToString(float64(bytes)))
+	return hp.quotaer.UpdateQuota(path, xfs.ConvertBytesToString(float64(bytes)))
 }
 
 func (hp *HostPath) sumVolumeSizes(kind string) (sum int64) {

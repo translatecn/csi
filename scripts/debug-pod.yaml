@@ -91,14 +91,12 @@ spec:
             type: Directory
           name: plugins-dir
         - hostPath:
-            path: /dev
-            type: Directory
-          name: dev-dir
-        - hostPath:
             path: /build_cache
           name: cache-dir
-        - emptyDir: { }
-          name: csi-data-dir
+        - name: csi-data-dir
+          hostPath:
+            path: /csi-data-dir
+            type: DirectoryOrCreate
         - hostPath:
             path: /nfs
             type: Directory
